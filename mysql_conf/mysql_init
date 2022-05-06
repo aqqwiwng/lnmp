@@ -1,0 +1,23 @@
+#!/bin/bash
+password=`cat /var/log/mysqld.log|grep 'A temporary password'`
+password=${password:91}
+if [ -n "$1" ] ;then
+    pwd=$1
+else
+	pwd=root
+fi
+
+/usr/bin/expect <<EOF
+spawn mysql -uroot -p
+expect "Enter password:*"
+send "${password}\r"
+expect "Welcome to the MySQL monitor.*" 
+send "set global validate_password_policy=low;\r"
+send "set global validate_password_length=4;\r"
+send "alter user 'root'@'localhost' identified by '${pwd}';\r"
+send "quit;\r"
+expect eof
+EOF
+
+rm -f /usr/bin/mysql_init>/dev/null
+echo "密码已重置为：root，请尽快修改密码，本脚本只能用一次！"
